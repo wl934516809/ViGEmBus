@@ -6,56 +6,56 @@
 
 void PrintMessageInfo(const NetworkMessage& message, ClientConnection* fromClient)
 {
-    std::cout << "Received message type: ";
+    LOG_IO("Received message type: ");
 
     switch (message.header.type)
     {
         case MSG_HEARTBEAT:
-            std::cout << "HEARTBEAT";
+            LOG_IO("HEARTBEAT");
             break;
         case MSG_XBOX_STATE:
-            std::cout << "XBOX_STATE";
+            LOG_IO("XBOX_STATE");
             break;
         case MSG_XBOX_VIBRATION:
-            std::cout << "XBOX_VIBRATION";
+            LOG_IO("XBOX_VIBRATION");
             break;
         case MSG_DISCONNECT:
-            std::cout << "DISCONNECT";
+            LOG_IO("DISCONNECT");
             break;
         default:
-            std::cout << "UNKNOWN";
+            LOG_IO("UNKNOWN");
             break;
     }
 
-    std::cout << ", length: " << message.header.length;
-    std::cout << ", from: " << fromClient->clientId;
-    std::cout << " [" << inet_ntoa(fromClient->addr.sin_addr) << ":"
-              << ntohs(fromClient->addr.sin_port) << "]" << std::endl;
+    LOG_IO(", length: " << message.header.length);
+    LOG_IO(", from: " << fromClient->clientId);
+    LOG_IO(" [" << inet_ntoa(fromClient->addr.sin_addr) << ":"
+              << ntohs(fromClient->addr.sin_port) << "]");
 }
 
 void PrintXboxState(const XboxControllerState& state)
 {
-    std::cout << "  ";
-    if (state.wButtons != 0) std::cout << "BUTTONS=" << std::hex << state.wButtons << " ";
-    if (state.bLeftTrigger != 0) std::cout << "LTRIG=" << (int)state.bLeftTrigger << " ";
-    if (state.bRightTrigger != 0) std::cout << "RTRIG=" << (int)state.bRightTrigger << " ";
-    if (state.sThumbLX != 0) std::cout << "LX=" << state.sThumbLX << " ";
-    if (state.sThumbLY != 0) std::cout << "LY=" << state.sThumbLY << " ";
-    if (state.sThumbRX != 0) std::cout << "RX=" << state.sThumbRX << " ";
-    if (state.sThumbRY != 0) std::cout << "RY=" << state.sThumbRY << " ";
-    std::cout << std::dec << std::endl;
+    LOG_IO("  ");
+    if (state.wButtons != 0) LOG_IO("BUTTONS=" << std::hex << state.wButtons << " ");
+    if (state.bLeftTrigger != 0) LOG_IO("LTRIG=" << (int)state.bLeftTrigger << " ");
+    if (state.bRightTrigger != 0) LOG_IO("RTRIG=" << (int)state.bRightTrigger << " ");
+    if (state.sThumbLX != 0) LOG_IO("LX=" << state.sThumbLX << " ");
+    if (state.sThumbLY != 0) LOG_IO("LY=" << state.sThumbLY << " ");
+    if (state.sThumbRX != 0) LOG_IO("RX=" << state.sThumbRX << " ");
+    if (state.sThumbRY != 0) LOG_IO("RY=" << state.sThumbRY << " ");
+    LOG_IO(std::dec << "");
 }
 
 int main()
 {
-    std::cout << "=== ViGEm Server ===" << std::endl;
-    std::cout << "Initializing..." << std::endl;
+    LOG_INFO("=== ViGEm Server ===");
+    LOG_INFO("Initializing...");
 
     TCPServer server;
 
     if (!server.Start())
     {
-        std::cerr << "Failed to start server" << std::endl;
+        LOG_ERROR("Failed to start server");
         return 1;
     }
 
@@ -63,14 +63,14 @@ int main()
 
     if (!vigem.Initialize())
     {
-        std::cerr << "Failed to connect to ViGEm driver" << std::endl;
+        LOG_ERROR("Failed to connect to ViGEm driver");
         server.Stop();
         return 1;
     }
 
-    std::cout << "\n=== Server Ready ===" << std::endl;
-    std::cout << "Press ESC to stop server" << std::endl;
-    std::cout << "--------------------------\n" << std::endl;
+    LOG_INFO("\n=== Server Ready ===");
+    LOG_INFO("Press ESC to stop server");
+    LOG_INFO("--------------------------\n");
 
     NetworkMessage message;
     ClientConnection* fromClient;
@@ -79,7 +79,7 @@ int main()
     {
         if (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
         {
-            std::cout << "\n\nESC pressed, stopping server..." << std::endl;
+            LOG_INFO("\n\nESC pressed, stopping server...");
             break;
         }
 
@@ -90,12 +90,12 @@ int main()
             switch (message.header.type)
             {
                 case MSG_HEARTBEAT:
-                    std::cout << "  Processing heartbeat" << std::endl;
+                    LOG_IO("  Processing heartbeat");
                     break;
 
                 case MSG_XBOX_STATE:
                 {
-                    std::cout << "  Processing Xbox state: ";
+                    LOG_IO("  Processing Xbox state: ");
                     PrintXboxState(message.data.controller);
 
                     auto controllers = vigem.GetControllersByClient(fromClient);
@@ -114,7 +114,7 @@ int main()
                     {
                         if (!vigem.UpdateXbox360State(controller, message.data.controller))
                         {
-                            std::cerr << "Failed to update virtual controller state" << std::endl;
+                            LOG_ERROR("Failed to update virtual controller state");
                         }
                     }
 
@@ -123,9 +123,9 @@ int main()
 
                 case MSG_XBOX_VIBRATION:
                     {
-                        std::cout << "  Processing vibration: "
+                        LOG_IO("  Processing vibration: "
                                   << "Left=" << message.data.vibration.wLeftMotorSpeed
-                                  << ", Right=" << message.data.vibration.wRightMotorSpeed << std::endl;
+                                  << ", Right=" << message.data.vibration.wRightMotorSpeed);
 
                         auto controllers = vigem.GetControllersByClient(fromClient);
                         if (!controllers.empty())
@@ -137,7 +137,7 @@ int main()
 
                 case MSG_DISCONNECT:
                     {
-                        std::cout << "  Client is disconnecting" << std::endl;
+                        LOG_IO("  Client is disconnecting");
                         server.DisconnectClient(fromClient);
 
                         auto clientControllers = vigem.GetControllersByClient(fromClient);
@@ -149,7 +149,7 @@ int main()
                     break;
 
                 default:
-                    std::cout << "  Unknown message type: " << message.header.type << std::endl;
+                    LOG_IO("  Unknown message type: " << message.header.type);
                     break;
             }
         }
@@ -174,7 +174,7 @@ int main()
                     // 如果客户端已断开，删除控制器
                     if (!controller->client->connected)
                     {
-                        std::cout << "Cleaning up device for disconnected client..." << std::endl;
+                        LOG_DEBUG("Cleaning up device for disconnected client...");
                         vigem.RemoveController(controller);
                     }
                 }
@@ -187,9 +187,9 @@ int main()
     server.Stop();
     vigem.Shutdown();
 
-    std::cout << "\n=== Server Stopped ===" << std::endl;
-    std::cout << "All resources released" << std::endl;
-    std::cout << "Press any key to continue..." << std::endl;
+    LOG_INFO("\n=== Server Stopped ===");
+    LOG_INFO("All resources released");
+    LOG_INFO("Press any key to continue...");
     std::cin.get();
 
     return 0;

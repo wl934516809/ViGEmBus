@@ -31,22 +31,22 @@ bool ViGEmDriver::Initialize()
     m_Client = vigem_alloc();
     if (m_Client == nullptr)
     {
-        std::cerr << "Failed to allocate ViGEm client" << std::endl;
+        LOG_ERROR("Failed to allocate ViGEm client");
         return false;
     }
 
     VIGEM_ERROR error = vigem_connect(m_Client);
     if (!VIGEM_SUCCESS(error))
     {
-        std::cerr << "Failed to connect to ViGEm driver, error: 0x" << std::hex << error << std::dec << std::endl;
-        std::cerr << "Please ensure ViGEmBus driver is installed!" << std::endl;
+        LOG_ERROR("Failed to connect to ViGEm driver, error: 0x" << std::hex << error << std::dec);
+        LOG_ERROR("Please ensure ViGEmBus driver is installed!");
         vigem_free(m_Client);
         m_Client = nullptr;
         return false;
     }
 
     m_Initialized = true;
-    std::cout << "Connected to ViGEmBus driver" << std::endl;
+    LOG_INFO("Connected to ViGEmBus driver");
     return true;
 }
 
@@ -65,7 +65,7 @@ void ViGEmDriver::Shutdown()
     }
 
     m_Initialized = false;
-    std::cout << "Disconnected from ViGEmBus driver" << std::endl;
+    LOG_INFO("Disconnected from ViGEmBus driver");
 }
 
 DWORD ViGEmDriver::GetNextFreeSlot()
@@ -77,7 +77,7 @@ VirtualController* ViGEmDriver::CreateXbox360Controller(ClientConnection* client
 {
     if (!m_Initialized || m_Client == nullptr)
     {
-        std::cerr << "ViGEm driver not initialized" << std::endl;
+        LOG_ERROR("ViGEm driver not initialized");
         return nullptr;
     }
 
@@ -89,7 +89,7 @@ VirtualController* ViGEmDriver::CreateXbox360Controller(ClientConnection* client
 
     if (controller->target == nullptr)
     {
-        std::cerr << "Failed to allocate Xbox 360 controller" << std::endl;
+        LOG_ERROR("Failed to allocate Xbox 360 controller");
         delete controller;
         return nullptr;
     }
@@ -97,7 +97,7 @@ VirtualController* ViGEmDriver::CreateXbox360Controller(ClientConnection* client
     VIGEM_ERROR error = vigem_target_add(m_Client, controller->target);
     if (!VIGEM_SUCCESS(error))
     {
-        std::cerr << "Failed to add Xbox 360 controller, error: 0x" << std::hex << error << std::dec << std::endl;
+        LOG_ERROR("Failed to add Xbox 360 controller, error: 0x" << std::hex << error << std::dec);
         vigem_target_free(controller->target);
         delete controller;
         return nullptr;
@@ -113,7 +113,7 @@ VirtualController* ViGEmDriver::CreateXbox360Controller(ClientConnection* client
     controller->connected = true;
     m_Controllers.push_back(controller);
 
-    std::cout << "Created Xbox 360 controller #" << controller->index << std::endl;
+    LOG_IO("Created Xbox 360 controller #" << controller->index);
 
     return controller;
 }
@@ -133,7 +133,7 @@ bool ViGEmDriver::RemoveController(VirtualController* controller)
         vigem_target_free(controller->target);
     }
 
-    std::cout << "Removed Xbox 360 controller #" << controller->index << std::endl;
+    LOG_IO("Removed Xbox 360 controller #" << controller->index);
 
     delete controller;
     m_Controllers.erase(it);
@@ -143,7 +143,7 @@ bool ViGEmDriver::RemoveController(VirtualController* controller)
 
 void ViGEmDriver::CleanupControllers()
 {
-    std::cout << "Cleaning up " << m_Controllers.size() << " virtual controllers..." << std::endl;
+    LOG_DEBUG("Cleaning up " << m_Controllers.size() << " virtual controllers...");
 
     for (auto controller : m_Controllers)
     {
@@ -205,9 +205,9 @@ VOID CALLBACK ViGEmDriver::X360VibrationCallback(
     state.wLeftMotorSpeed = static_cast<uint16_t>(LargeMotor) * 257;
     state.wRightMotorSpeed = static_cast<uint16_t>(SmallMotor) * 257;
 
-    std::cout << "Vibration: large=" << static_cast<int>(LargeMotor)
+    LOG_IO("Vibration: large=" << static_cast<int>(LargeMotor)
               << ", small=" << static_cast<int>(SmallMotor)
-              << ", LED=" << static_cast<int>(LedNumber) << std::endl;
+              << ", LED=" << static_cast<int>(LedNumber));
 }
 
 std::vector<VirtualController*> ViGEmDriver::GetControllersByClient(ClientConnection* client)

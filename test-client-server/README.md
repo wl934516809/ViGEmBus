@@ -18,9 +18,47 @@
 
 1. 首先安装并运行 ViGEmBus 驱动
 2. 运行 tcp-server (服务端)
-3. 运行 tcp-client (客户端)
+3. 运行 tcp-client (客户端) - 支持命令行参数配置
 4. 连接真实的 Xbox 手柄
 5. 游戏会看到虚拟手柄的输入！
+
+## 客户端程序使用说明
+
+### 命令行参数
+
+客户端程序支持以下命令行参数：
+
+```cmd
+tcp-client.exe [options]
+```
+
+#### 可用选项：
+
+- **`-i, --ip <address>`**：指定服务器的 IP 地址（默认：`10.86.51.110`）
+- **`-p, --port <port>`**：指定服务器端口（默认：`12345`）
+- **`-h, --help`**：显示帮助信息和使用示例
+
+#### 使用示例：
+
+```cmd
+# 使用默认配置连接
+tcp-client.exe
+
+# 连接到指定 IP 地址
+tcp-client.exe --ip 192.168.1.100
+
+# 连接到指定端口
+tcp-client.exe --port 54321
+
+# 同时指定 IP 地址和端口
+tcp-client.exe --ip 192.168.1.100 --port 54321
+
+# 使用短选项
+tcp-client.exe -i 192.168.1.100 -p 54321
+
+# 显示帮助信息
+tcp-client.exe --help
+```
 
 ## 项目结构
 

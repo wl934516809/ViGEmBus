@@ -25,13 +25,13 @@ bool XboxController::Initialize()
     if (result == ERROR_SUCCESS)
     {
         m_Connected = true;
-        std::cout << "XBOX Controller " << m_UserIndex << " connected" << std::endl;
+        LOG_INFO("XBOX Controller " << m_UserIndex << " connected");
         return true;
     }
     else
     {
         m_Connected = false;
-        std::cout << "XBOX Controller " << m_UserIndex << " not found" << std::endl;
+        LOG_INFO("XBOX Controller " << m_UserIndex << " not found");
         return false;
     }
 }

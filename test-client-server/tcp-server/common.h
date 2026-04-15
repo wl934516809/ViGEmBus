@@ -5,6 +5,22 @@
 #include <Windows.h>
 #include <stdint.h>
 #include <string.h>
+#include <iostream>
+
+// 日志宏定义 - 根据编译模式控制输出
+#if defined(_DEBUG) || defined(DEBUG)
+    #define LOG_INFO(...)    do { std::cout << __VA_ARGS__ << std::endl; } while(false)
+    #define LOG_WARNING(...) do { std::cerr << "WARNING: " << __VA_ARGS__ << std::endl; } while(false)
+    #define LOG_ERROR(...)   do { std::cerr << "ERROR: " << __VA_ARGS__ << std::endl; } while(false)
+    #define LOG_DEBUG(...)   do { std::cout << "DEBUG: " << __VA_ARGS__ << std::endl; } while(false)
+    #define LOG_IO(...)      do { std::cout << __VA_ARGS__ << std::endl; } while(false)  // IO 相关日志，Debug 版本输出，Release 版本不输出
+#else
+    #define LOG_INFO(...)    do { } while(false)
+    #define LOG_WARNING(...) do { } while(false)
+    #define LOG_ERROR(...)   do { std::cerr << "ERROR: " << __VA_ARGS__ << std::endl; } while(false)
+    #define LOG_DEBUG(...)   do { } while(false)
+    #define LOG_IO(...)      do { } while(false)  // IO 相关日志，Release 版本禁止输出
+#endif
 
 #define DEFAULT_PORT "12345"
 #define DEFAULT_SERVER_ADDR "10.86.51.110"

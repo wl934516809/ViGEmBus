@@ -23,7 +23,7 @@ bool TCPClient::InitializeWinsock()
     int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0)
     {
-        std::cerr << "WSAStartup failed: " << iResult << std::endl;
+        LOG_ERROR("WSAStartup failed: " << iResult);
         return false;
     }
 
@@ -51,7 +51,7 @@ bool TCPClient::Connect(const char* serverAddr, const char* port)
     m_Socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (m_Socket == INVALID_SOCKET)
     {
-        std::cerr << "Socket creation failed: " << WSAGetLastError() << std::endl;
+        LOG_ERROR("Socket creation failed: " << WSAGetLastError());
         CleanupWinsock();
         return false;
     }
@@ -61,7 +61,7 @@ bool TCPClient::Connect(const char* serverAddr, const char* port)
     serverAddrInfo.sin_port = htons((u_short)atoi(port));
     if (inet_pton(AF_INET, serverAddr, &serverAddrInfo.sin_addr) <= 0)
     {
-        std::cerr << "Invalid server address: " << serverAddr << std::endl;
+        LOG_ERROR("Invalid server address: " << serverAddr);
         closesocket(m_Socket);
         m_Socket = INVALID_SOCKET;
         return false;
@@ -70,14 +70,14 @@ bool TCPClient::Connect(const char* serverAddr, const char* port)
     int iResult = connect(m_Socket, (struct sockaddr*)&serverAddrInfo, sizeof(serverAddrInfo));
     if (iResult == SOCKET_ERROR)
     {
-        std::cerr << "Connect failed: " << WSAGetLastError() << std::endl;
+        LOG_ERROR("Connect failed: " << WSAGetLastError());
         closesocket(m_Socket);
         m_Socket = INVALID_SOCKET;
         return false;
     }
 
     m_Connected = true;
-    std::cout << "Connected to " << serverAddr << ":" << port << std::endl;
+    LOG_INFO("Connected to " << serverAddr << ":" << port);
 
     SendHeartbeat();
 
@@ -95,7 +95,7 @@ void TCPClient::Disconnect()
         closesocket(m_Socket);
         m_Socket = INVALID_SOCKET;
         m_Connected = false;
-        std::cout << "Disconnected from server" << std::endl;
+        LOG_INFO("Disconnected from server");
     }
 
     CleanupWinsock();
@@ -116,7 +116,7 @@ bool TCPClient::SendMessage(const NetworkMessage& message)
 
     if (iResult == SOCKET_ERROR)
     {
-        std::cerr << "Send failed: " << WSAGetLastError() << std::endl;
+        LOG_ERROR("Send failed: " << WSAGetLastError());
         m_Connected = false;
         return false;
     }
@@ -166,7 +166,7 @@ bool TCPClient::ReceiveMessage(NetworkMessage& message, int timeoutMs)
 
     if (selectResult == SOCKET_ERROR)
     {
-        std::cerr << "Select failed: " << WSAGetLastError() << std::endl;
+        LOG_ERROR("Select failed: " << WSAGetLastError());
         m_Connected = false;
         return false;
     }
@@ -177,7 +177,7 @@ bool TCPClient::ReceiveMessage(NetworkMessage& message, int timeoutMs)
     int iResult = recv(m_Socket, (char*)&message.header, sizeof(MessageHeader), 0);
     if (iResult == SOCKET_ERROR)
     {
-        std::cerr << "Receive header failed: " << WSAGetLastError() << std::endl;
+        LOG_ERROR("Receive header failed: " << WSAGetLastError());
         m_Connected = false;
         return false;
     }
@@ -190,7 +190,7 @@ bool TCPClient::ReceiveMessage(NetworkMessage& message, int timeoutMs)
 
     if (!IsValidMessage(&message.header))
     {
-        std::cerr << "Invalid message header" << std::endl;
+        LOG_ERROR("Invalid message header");
         return false;
     }
 
@@ -199,7 +199,7 @@ bool TCPClient::ReceiveMessage(NetworkMessage& message, int timeoutMs)
         iResult = recv(m_Socket, (char*)&message.data, message.header.length, 0);
         if (iResult == SOCKET_ERROR)
         {
-            std::cerr << "Receive data failed: " << WSAGetLastError() << std::endl;
+            LOG_ERROR("Receive data failed: " << WSAGetLastError());
             m_Connected = false;
             return false;
         }

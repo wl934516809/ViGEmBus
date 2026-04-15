@@ -2,6 +2,7 @@
 #include "tcp_server.h"
 #include <iostream>
 #include <thread>
+#include <algorithm>
 
 TCPServer::TCPServer()
     : m_ListenSocket(INVALID_SOCKET)
@@ -24,7 +25,7 @@ bool TCPServer::InitializeWinsock()
     int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0)
     {
-        std::cerr << "WSAStartup failed: " << iResult << std::endl;
+        LOG_ERROR("WSAStartup failed: " << iResult);
         return false;
     }
 
@@ -49,7 +50,7 @@ bool TCPServer::Start(const char* port)
     m_ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (m_ListenSocket == INVALID_SOCKET)
     {
-        std::cerr << "Socket creation failed: " << WSAGetLastError() << std::endl;
+        LOG_ERROR("Socket creation failed: " << WSAGetLastError());
         CleanupWinsock();
         return false;
     }
@@ -64,7 +65,7 @@ bool TCPServer::Start(const char* port)
 
     if (bind(m_ListenSocket, (struct sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR)
     {
-        std::cerr << "Bind failed: " << WSAGetLastError() << std::endl;
+        LOG_ERROR("Bind failed: " << WSAGetLastError());
         closesocket(m_ListenSocket);
         m_ListenSocket = INVALID_SOCKET;
         CleanupWinsock();
@@ -73,7 +74,7 @@ bool TCPServer::Start(const char* port)
 
     if (listen(m_ListenSocket, SOMAXCONN) == SOCKET_ERROR)
     {
-        std::cerr << "Listen failed: " << WSAGetLastError() << std::endl;
+        LOG_ERROR("Listen failed: " << WSAGetLastError());
         closesocket(m_ListenSocket);
         m_ListenSocket = INVALID_SOCKET;
         CleanupWinsock();
@@ -82,8 +83,8 @@ bool TCPServer::Start(const char* port)
 
     m_Running = true;
 
-    std::cout << "Server listening on port " << port << std::endl;
-    std::cout << "Press ESC to stop" << std::endl;
+    LOG_INFO("Server listening on port " << port);
+    LOG_INFO("Press ESC to stop");
 
     return true;
 }
@@ -116,7 +117,7 @@ void TCPServer::Stop()
 
     CleanupWinsock();
 
-    std::cout << "Server stopped" << std::endl;
+    LOG_INFO("Server stopped");
 }
 
 bool TCPServer::IsRunning() const
@@ -154,11 +155,11 @@ void TCPServer::AcceptConnections()
 
             m_Clients.push_back(client);
 
-            std::cout << client->clientId << " connected from "
+            LOG_IO(client->clientId << " connected from "
                 << inet_ntoa(clientAddr.sin_addr) << ":"
-                << ntohs(clientAddr.sin_port) << std::endl;
+                << ntohs(clientAddr.sin_port));
 
-            std::cout << "Total clients: " << m_Clients.size() << std::endl;
+            LOG_IO("Total clients: " << m_Clients.size());
         }
     }
 }
@@ -174,8 +175,16 @@ void TCPServer::DisconnectClient(ClientConnection* client)
         send(client->socket, (const char*)&msg, sizeof(MessageHeader), 0);
         closesocket(client->socket);
 
-        std::cout << client->clientId << " disconnected" << std::endl;
-        std::cout << "Total clients: " << m_Clients.size() << std::endl;
+        LOG_IO(client->clientId << " disconnected");
+    }
+
+    // 从客户端列表中删除
+    auto it = std::find(m_Clients.begin(), m_Clients.end(), client);
+    if (it != m_Clients.end())
+    {
+        delete *it;
+        m_Clients.erase(it);
+        LOG_IO("Total clients: " << m_Clients.size());
     }
 }
 
@@ -208,7 +217,7 @@ bool TCPServer::ReceiveMessage(NetworkMessage& message, ClientConnection** fromC
 
     if (selectResult == SOCKET_ERROR)
     {
-        std::cerr << "Select failed: " << WSAGetLastError() << std::endl;
+        LOG_ERROR("Select failed: " << WSAGetLastError());
         return false;
     }
 
@@ -225,21 +234,21 @@ bool TCPServer::ReceiveMessage(NetworkMessage& message, ClientConnection** fromC
 
             if (iResult == SOCKET_ERROR)
             {
-                std::cerr << "Receive header failed: " << WSAGetLastError() << std::endl;
+                LOG_ERROR("Receive header failed: " << WSAGetLastError());
                 DisconnectClient(client);
                 continue;
             }
 
             if (iResult == 0)
             {
-                std::cout << client->clientId << " closed connection" << std::endl;
+                LOG_IO(client->clientId << " closed connection");
                 DisconnectClient(client);
                 continue;
             }
 
             if (!IsValidMessage(&message.header))
             {
-                std::cerr << "Invalid message from " << client->clientId << std::endl;
+                LOG_ERROR("Invalid message from " << client->clientId);
                 continue;
             }
 
@@ -250,7 +259,7 @@ bool TCPServer::ReceiveMessage(NetworkMessage& message, ClientConnection** fromC
 
                 if (iResult == SOCKET_ERROR)
                 {
-                    std::cerr << "Receive data failed: " << WSAGetLastError() << std::endl;
+                    LOG_ERROR("Receive data failed: " << WSAGetLastError());
                     DisconnectClient(client);
                     continue;
                 }
@@ -274,7 +283,7 @@ bool TCPServer::SendMessage(ClientConnection* client, const NetworkMessage& mess
 
     if (iResult == SOCKET_ERROR)
     {
-        std::cerr << "Send failed to " << client->clientId << ": " << WSAGetLastError() << std::endl;
+        LOG_ERROR("Send failed to " << client->clientId << ": " << WSAGetLastError());
         DisconnectClient(client);
         return false;
     }

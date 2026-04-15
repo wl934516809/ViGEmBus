@@ -8,9 +8,25 @@
 #include <Windows.h>
 #include <stdint.h>
 #include <string.h>
+#include <iostream>
+
+// 日志宏定义 - 根据编译模式控制输出
+#if defined(_DEBUG) || defined(DEBUG)
+    #define LOG_INFO(...)    do { std::cout << __VA_ARGS__ << std::endl; } while(false)
+    #define LOG_WARNING(...) do { std::cerr << "WARNING: " << __VA_ARGS__ << std::endl; } while(false)
+    #define LOG_ERROR(...)   do { std::cerr << "ERROR: " << __VA_ARGS__ << std::endl; } while(false)
+    #define LOG_DEBUG(...)   do { std::cout << "DEBUG: " << __VA_ARGS__ << std::endl; } while(false)
+    #define LOG_IO(...)      do { std::cout << __VA_ARGS__ << std::endl; } while(false)  // IO 相关日志，Debug 版本输出，Release 版本不输出
+#else
+    #define LOG_INFO(...)    do { } while(false)
+    #define LOG_WARNING(...) do { } while(false)
+    #define LOG_ERROR(...)   do { std::cerr << "ERROR: " << __VA_ARGS__ << std::endl; } while(false)
+    #define LOG_DEBUG(...)   do { } while(false)
+    #define LOG_IO(...)      do { } while(false)  // IO 相关日志，Release 版本禁止输出
+#endif
 
 #define DEFAULT_PORT "12345"
-#define DEFAULT_SERVER_ADDR "10.86.51.110"
+#define DEFAULT_SERVER_ADDR "127.0.0.1"
 #define MAX_BUFFER_SIZE 2048
 
 typedef uint32_t MessageType;
@@ -22,12 +38,12 @@ typedef uint32_t MessageType;
 typedef struct _XboxControllerState
 {
     uint16_t wButtons;
-    uint8_t  bLeftTrigger;
-    uint8_t  bRightTrigger;
-    int16_t  sThumbLX;
-    int16_t  sThumbLY;
-    int16_t  sThumbRX;
-    int16_t  sThumbRY;
+    uint8_t bLeftTrigger;
+    uint8_t bRightTrigger;
+    int16_t sThumbLX;
+    int16_t sThumbLY;
+    int16_t sThumbRX;
+    int16_t sThumbRY;
 } XboxControllerState;
 
 typedef struct _XboxVibrationState
@@ -55,12 +71,12 @@ typedef struct _NetworkMessage
 
 #define MESSAGE_MAGIC 0x47454D58
 
-static inline int IsValidMessage(const MessageHeader* header)
+static inline int IsValidMessage(const MessageHeader *header)
 {
     return header && header->magic == MESSAGE_MAGIC;
 }
 
-static inline void FillMessageHeader(MessageHeader* header, MessageType type, uint32_t length)
+static inline void FillMessageHeader(MessageHeader *header, MessageType type, uint32_t length)
 {
     if (header)
     {
